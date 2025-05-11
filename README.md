@@ -1,6 +1,8 @@
 # Marvel Snap Alliance Tracker
 
-This was a weekend project built with [D3.js](https://d3js.org/) to help my [Marvel Snap Alliance](https://www.marvelsnap.com/home/newsdetail?id=7389829092880734981) keep track of who has been active. None of the Marvel Snap clients allow you to see historical data, but it is captured in a file the game saves to appdata.
+This was a weekend project built with [D3.js](https://d3js.org/) to help my [Marvel Snap Alliance](https://www.marvelsnap.com/home/newsdetail?id=7389829092880734981) keep track of who has been active week over week.
+
+While none of the Marvel Snap clients allow you to see historical data, the game does save up the past five weeks per current alliance member. This website reads the file to generate charts, along with an adjustable threshold limit.
 
 Try it out at [https://brethudson.github.io/marvel-snap-alliance-tracker/](https://brethudson.github.io/marvel-snap-alliance-tracker/)
 
