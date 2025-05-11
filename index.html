@@ -24,6 +24,23 @@
 			content="https://brethudson.github.io/marvel-snap-alliance-tracker/img/og.png"
 		/>
 		<style>
+			html {
+				height: 100%;
+			}
+
+			body {
+				display: grid;
+				margin: 0;
+				gap: 1rem;
+				align-content: space-between;
+				min-height: 100%;
+			}
+
+			main,
+			footer {
+				padding: 0.75rem;
+			}
+
 			svg {
 				font: 10px sans-serif;
 			}
@@ -76,48 +93,69 @@
 			.player p {
 				line-height: 1.2;
 			}
+
+			footer {
+				margin-top: auto;
+			}
 		</style>
 	</head>
 	<body>
-		<h1>Marvel Snap Alliance Tracker (Beta)</h1>
-		<p>Instructions:</p>
-		<ol>
-			<li>Run Marvel Snap via the Steam client</li>
-			<li>Open the Alliances tab, wait for it to load</li>
-			<li>[Optional] Close Marvel Snap</li>
-			<li>
-				Navigate to your LocalLow AppData folder (<code
-					>C:\Users\[your user]\AppData\LocalLow</code
-				>)
-			</li>
-			<li>
-				Within there, navigate to
-				<code>Second Dinner\SNAP\Standalone\States\nvprod</code>
-			</li>
-			<li>
-				Click "Choose File" below and select your
-				<code>ClanState.json</code> file
-			</li>
-		</ol>
-		<p>
-			For instance, my file is found at
-			<code
-				>C:\Users\Bret\AppData\LocalLow\Second
-				Dinner\SNAP\Standalone\States\nvprod\ClanState.json</code
-			>.
-		</p>
-		<p>
-			Note: Any files processed by this page are not uploaded to any servers.
-			All data processing is done locally on your machine.
-		</p>
-		<hr />
-		<input id="file-input" type="file" />
-		<label for="threshold">Threshold:</label>
-		<input id="threshold" type="number" value="1000" step="100" />
-		<br />
-		<div class="tooltip" style="opacity: 0"></div>
-		<!-- C:\Users\Bret\AppData\LocalLow\Second Dinner\SNAP\Standalone\States\nvprod\ClanState.json -->
-		<!-- <svg width="600" height="400"></svg> -->
+		<main>
+			<h1>Marvel Snap Alliance Tracker (Beta)</h1>
+			<p>Instructions:</p>
+			<ol>
+				<li>Run Marvel Snap via the Steam client</li>
+				<li>Open the Alliances tab, wait for it to load</li>
+				<li>[Optional] Close Marvel Snap</li>
+				<li>
+					Navigate to your LocalLow AppData folder (<code
+						>C:\Users\[your user]\AppData\LocalLow</code
+					>)
+				</li>
+				<li>
+					Within there, navigate to
+					<code>Second Dinner\SNAP\Standalone\States\nvprod</code>
+				</li>
+				<li>
+					Click "Choose File" below and select your
+					<code>ClanState.json</code> file
+				</li>
+			</ol>
+			<p>
+				For instance, my file is found at
+				<code
+					>C:\Users\Bret\AppData\LocalLow\Second
+					Dinner\SNAP\Standalone\States\nvprod\ClanState.json</code
+				>.
+			</p>
+			<p>
+				Note: Any files processed by this page are not uploaded to any servers.
+				All data processing is done locally on your machine.
+			</p>
+			<hr />
+			<input id="file-input" type="file" />
+			<label for="threshold">Threshold:</label>
+			<input id="threshold" type="number" value="1000" step="100" />
+			<br />
+			<div class="tooltip" style="opacity: 0"></div>
+			<!-- C:\Users\Bret\AppData\LocalLow\Second Dinner\SNAP\Standalone\States\nvprod\ClanState.json -->
+			<!-- <svg width="600" height="400"></svg> -->
+		</main>
+		<footer>
+			<p style="line-height: 1.2">
+				<b>Disclaimer:</b> This project is not affiliated with, endorsed by, or
+				sponsored by Marvel, Second Dinner, or Nuverse.
+			</p>
+			<p>
+				All trademarks, including the Marvel Snap name and logo, are the
+				property of their respective owners. I do not claim any rights to them.
+			</p>
+			<br />
+			<p>
+				This page was a Sunday project by
+				<a href="https://brethudson.com">Bret Hudson</a>
+			</p>
+		</footer>
 		<script type="module">
 			const joinDateFormatter = new Intl.DateTimeFormat(undefined, {
 				month: 'short',
@@ -153,7 +191,7 @@
 			const createGraph = (member) => {
 				const wrapper = document.createElement('div');
 				wrapper.classList.add('player');
-				document.body.append(wrapper);
+				document.querySelector('main').append(wrapper);
 
 				const { name, joined, lastUpdated, periods } = member;
 
