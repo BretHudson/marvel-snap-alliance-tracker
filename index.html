@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Marvel Snap Alliance Tracker</title>
+		<script src="https://d3js.org/d3.v7.min.js"></script>
+		<meta name="color-scheme" content="dark light" />
+		<style>
+			svg {
+				font: 10px sans-serif;
+			}
+			.line {
+				fill: none;
+				stroke-width: 2px;
+				pointer-events: none;
+			}
+			.tooltip {
+				position: absolute;
+				background: black;
+				border: 1px solid #ccc;
+				padding: 5px;
+				pointer-events: none;
+				font-size: 12px;
+			}
+			.overlay {
+				cursor: pointer;
+			}
+			.overlay:hover {
+				stroke: white;
+			}
+			h1 {
+				margin-bottom: 0.33em;
+			}
+			h3 {
+				margin-bottom: 0;
+			}
+			p {
+				margin: 0;
+				line-height: 1.65;
+			}
+			ol {
+				margin: 0 0.25rem;
+			}
+			li {
+				line-height: 1.5;
+			}
+
+			code {
+				border: 1px solid currentColor;
+				padding: 0.125rem 0.25rem;
+				border-radius: 0.25rem;
+			}
+
+			.player {
+				display: inline-block;
+			}
+
+			.player p {
+				line-height: 1.2;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Marvel Snap Alliance Tracker (Beta)</h1>
+		<p>Instructions:</p>
+		<ol>
+			<li>Run Marvel Snap via the Steam client</li>
+			<li>Open the Alliances tab, wait for it to load</li>
+			<li>[Optional] Close Marvel Snap</li>
+			<li>
+				Navigate to your LocalLow AppData folder (<code
+					>C:\Users\[your user]\AppData\LocalLow</code
+				>)
+			</li>
+			<li>
+				Within there, navigate to
+				<code>Second Dinner\SNAP\Standalone\States\nvprod</code>
+			</li>
+			<li>
+				Click "Choose File" below and select your
+				<code>ClanState.json</code> file
+			</li>
+		</ol>
+		<p>
+			For instance, my file is found at
+			<code
+				>C:\Users\Bret\AppData\LocalLow\Second
+				Dinner\SNAP\Standalone\States\nvprod\ClanState.json</code
+			>.
+		</p>
+		<p>
+			Note: Any files processed by this page are not uploaded to any servers.
+			All data processing is done locally on your machine.
+		</p>
+		<hr />
+		<input id="file-input" type="file" />
+		<label for="threshold">Threshold:</label>
+		<input id="threshold" type="number" value="1000" step="100" />
+		<br />
+		<div class="tooltip" style="opacity: 0"></div>
+		<!-- C:\Users\Bret\AppData\LocalLow\Second Dinner\SNAP\Standalone\States\nvprod\ClanState.json -->
+		<!-- <svg width="600" height="400"></svg> -->
+		<script type="module">
+			const joinDateFormatter = new Intl.DateTimeFormat(undefined, {
+				month: 'short',
+				day: 'numeric',
+				year: 'numeric',
+			});
+
+			const fileInput = document.getElementById('file-input');
+
+			const thresholdInput = document.getElementById('threshold');
+			let curThreshold = +thresholdInput.value;
+
+			const colorAbove = 'lime';
+			const colorBelow = 'red';
+
+			const getColor = (value, threshold) =>
+				value >= threshold ? colorAbove : colorBelow;
+
+			const periodDateFormatter = new Intl.DateTimeFormat(undefined, {
+				month: 'numeric',
+				day: '2-digit',
+			});
+
+			const getLabels = (member) => {
+				return member.periods.map(({ startTime, endTime }) => {
+					return [
+						periodDateFormatter.format(startTime),
+						periodDateFormatter.format(endTime),
+					].join(' - ');
+				});
+			};
+
+			const createGraph = (member) => {
+				const wrapper = document.createElement('div');
+				wrapper.classList.add('player');
+				document.body.append(wrapper);
+
+				const { name, joined, lastUpdated, periods } = member;
+
+				const h2 = document.createElement('h3');
+				h2.textContent = name;
+				wrapper.append(h2);
+
+				const joinedElem = document.createElement('p');
+				const updatedElem = document.createElement('p');
+				const joinedAt = joinDateFormatter.format(new Date(joined));
+				const updatedAt = joinDateFormatter.format(new Date(lastUpdated));
+				// joinedElem.textContent = ``;
+				updatedElem.innerHTML = `Joined ${joinedAt}&ensp;&bull;&ensp;Updated ${updatedAt}`;
+				wrapper.append(joinedElem);
+				wrapper.append(updatedElem);
+
+				const xValues = getLabels(member);
+				const yValues = periods.map((d) => d.totalPoints ?? 0);
+
+				const svg = d3
+					.select(wrapper)
+					.append('svg')
+					.attr('width', 340)
+					.attr('height', 200);
+				const tooltip = d3.select('.tooltip');
+
+				const width = +svg.attr('width');
+				const height = +svg.attr('height');
+				const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+
+				const x = d3
+					// .scaleLinear()
+					// .domain([0, data.length - 1])
+					.scalePoint()
+					.domain(xValues)
+					.range([margin.left, width - margin.right]);
+
+				const y = d3
+					.scaleLinear()
+					.domain([0, d3.max([...yValues, 1200])])
+					.nice()
+					.range([height - margin.bottom, margin.top]);
+
+				const line = d3
+					.line()
+					.x((d, i) => x(xValues[i]))
+					.y((d) => y(d));
+
+				const left = margin.left;
+				const bottom = height - margin.bottom;
+
+				svg
+					.append('g')
+					.attr('transform', `translate(0,${bottom})`)
+					.call(d3.axisBottom(x));
+
+				svg
+					.append('g')
+					.attr('transform', `translate(${left},0)`)
+					.call(d3.axisLeft(y));
+
+				svg
+					.selectAll('circle.icon')
+					.data(periods)
+					.enter()
+					.append('circle')
+					.attr('class', 'icon')
+					.attr('cx', (_, i) => x(xValues[i]))
+					.attr('cy', (d) => y(d.totalPoints ?? 0))
+					.attr('r', 5)
+					.attr('fill', getColor(0, 1));
+				svg
+					.selectAll('circle.overlay')
+					.data(periods)
+					.enter()
+					.append('circle')
+					.attr('class', 'overlay')
+					.attr('cx', (_, i) => x(xValues[i]))
+					.attr('cy', (d) => y(d.totalPoints ?? 0))
+					.attr('r', 12)
+					.attr('fill', 'transparent')
+					.on('mouseover', (e, d) => {
+						const { pageX: x, pageY: y } = e;
+						const i = periods.indexOf(d);
+						tooltip.transition().duration(200).style('opacity', 1);
+						const html = [
+							`<b>${xValues[i]}</b>`,
+							`Bounty: ${d.bountyPoints}`,
+							`Cube: ${d.cubePoints}`,
+							`<b>Total: ${d.totalPoints}</b>`,
+						].join('<br />');
+						tooltip
+							.html(html)
+							.style('left', x + 5 + 'px')
+							.style('top', y - 28 + 'px');
+					})
+					.on('mouseout', () => {
+						tooltip.transition().duration(500).style('opacity', 0);
+					});
+
+				const svgElem = svg.node();
+				svgElem.d3Funcs = { x, y };
+				svgElem.member = member;
+			};
+
+			const drawThreshold = (svg, y, threshold) => {
+				const width = +svg.attr('width');
+				const height = +svg.attr('height');
+				const margin = { top: 20, right: 30, bottom: 30, left: 40 };
+
+				svg.selectAll('.threshold').remove();
+
+				svg
+					.append('line')
+					.attr('class', 'threshold')
+					.attr('x1', margin.left)
+					.attr('x2', width - margin.right)
+					.attr('y1', y(threshold))
+					.attr('y2', y(threshold))
+					.attr('stroke', 'red')
+					.attr('stroke-width', 2)
+					.attr('stroke-dasharray', '4,2'); // optional dashed style
+			};
+
+			const updateGraph = (svg, threshold) => {
+				const { d3Funcs, member } = svg.node();
+				const { x, y } = d3Funcs;
+				svg.selectAll('.line').remove();
+
+				const data = member.periods.map(({ totalPoints }) => totalPoints);
+				const labels = getLabels(member);
+
+				const createLine = (line, stroke) => {
+					return svg
+						.append('path')
+						.attr('class', 'line')
+						.attr('d', d3.line()(line))
+						.attr('fill', 'none')
+						.attr('stroke-width', 2)
+						.attr('stroke', stroke);
+				};
+
+				for (let i = 0, j = i + 1, n = data.length - 1; i < n; ++i, ++j) {
+					const a = data[i];
+					const b = data[j];
+
+					const point1 = [x(labels[i]), y(a)];
+					const point2 = [x(labels[j]), y(b)];
+
+					if (Math.min(a, b) < threshold && Math.max(a, b) >= threshold) {
+						const t = (threshold - a) / (b - a);
+						const pointi = [
+							point1[0] + t * (point2[0] - point1[0]),
+							y(threshold),
+						];
+						createLine([point1, pointi], getColor(a, threshold));
+						createLine([pointi, point2], getColor(b, threshold));
+					} else {
+						createLine([point1, point2], getColor(a, threshold));
+					}
+
+					const circles = svg
+						.selectAll('circle.icon')
+						.attr('fill', (d) => getColor(d.totalPoints, threshold));
+					drawThreshold(svg, y, curThreshold);
+				}
+			};
+
+			const updateGraphs = (threshold) => {
+				const svgs = [...document.querySelectorAll('svg')];
+				svgs
+					.map((svg) => d3.select(svg))
+					.forEach((svg) => updateGraph(svg, threshold));
+			};
+
+			thresholdInput.addEventListener('change', (e) => {
+				const { value } = e.target;
+				curThreshold = value;
+				updateGraphs(curThreshold);
+			});
+
+			const loadMemberGraphs = (members) => {
+				[...document.querySelectorAll('.player')].forEach((p) => {
+					p.remove();
+				});
+
+				const _members = [...members].sort((a, b) => {
+					return b.PlayerInfo.TimeCreated.localeCompare(
+						a.PlayerInfo.TimeCreated,
+					);
+				});
+
+				const memberData = _members.map((member) => {
+					const { Name, TimeCreated, TimeUpdated } = member.PlayerInfo;
+					const periods = member.TimePeriodState.TimePeriodList.map(
+						(period) => {
+							const startTime = new Date(period.Key);
+							startTime.setDate(startTime.getDate() - 7);
+							const endTime = new Date(period.Key);
+							const bountyPoints = period.BountyPoints ?? 0;
+							const cubePoints = period.CubePoints ?? 0;
+							const totalPoints = bountyPoints + cubePoints;
+							return {
+								startTime,
+								endTime,
+								bountyPoints,
+								cubePoints,
+								totalPoints,
+							};
+						},
+					);
+					return {
+						name: Name,
+						joined: new Date(TimeCreated),
+						lastUpdated: new Date(TimeUpdated),
+						periods,
+					};
+					//
+				});
+
+				memberData.forEach(createGraph);
+				updateGraphs(curThreshold);
+			};
+
+			fileInput.addEventListener('change', (e) => {
+				const { files } = event.target;
+
+				const [file] = files;
+				if (file) {
+					const reader = new FileReader();
+					reader.onload = (e) => {
+						const content = e.target.result;
+						const data = JSON.parse(content);
+						const members = data?.ServerState?.Members;
+						if (members) {
+							loadMemberGraphs(members);
+						}
+					};
+
+					reader.readAsText(file);
+				}
+
+				// reset
+				fileInput.value = null;
+			});
+		</script>
+	</body>
+</html>
